@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloomSize - Bloom filter sizing, checked by running one</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#0f1226; color:#eef0fb; line-height:1.5; }
+  .wrap { max-width:700px; margin:0 auto; padding:26px 16px 50px; }
+  h1 { font-size:28px; } h1 span { color:#a5b4fc; }
+  .sub { color:#aeb4d6; margin:6px 0 16px; }
+  .card { background:#1a1f3d; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  label { font-size:12px; color:#aeb4d6; display:block; margin-bottom:3px; }
+  input,select { width:100%; background:#0f1226; color:#eef0fb; border:1px solid #4b5080; border-radius:8px; padding:8px; font-size:15px; font-family:inherit; }
+  button { background:#4f46c8; color:#eef0fb; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:14px; margin-right:6px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; } td,th { text-align:left; padding:8px 4px; border-bottom:1px solid #2e3358; } th { font-size:12px; color:#aeb4d6; font-weight:600; }
+  td.v { font-size:22px; font-weight:800; color:#a5b4fc; } tr.me td.v { color:#eef0fb; }
+  .stats { display:flex; gap:22px; flex-wrap:wrap; margin-top:12px; } .stats b { display:block; font-size:20px; } .muted { color:#aeb4d6; font-size:13px; }
+  .err { color:#ff9c8a; } .note { font-size:12.5px; color:#868cb4; margin-top:6px; }
+
+  td.v { font-size:17px; } td, th { font-size:14px; } .bar { height:10px; background:#0f1226; border-radius:6px; overflow:hidden; margin-top:6px; } .bar i { display:block; height:100%; background:#a5b4fc; } .bar i.over { background:#ff7b72; } .no { color:#ff9c8a; }
+  .cb { display:inline-flex; align-items:center; gap:4px; margin-right:12px; font-size:14px; color:#eef0fb; } .cb input { width:auto; } .big { font-family:monospace; font-size:26px; font-weight:800; color:#a5b4fc; } td.v.m { font-family:monospace; }
+  textarea { width:100%; background:#0f1226; color:#eef0fb; border:1px solid #4b5080; border-radius:8px; padding:8px; font-size:14px; font-family:monospace; min-height:110px; } .ok { color:#86efac; font-weight:700; } .no { color:#ff9c8a; } td.m { font-family:monospace; } .chip { display:inline-block; font-family:monospace; background:#0f1226; border-radius:6px; padding:2px 6px; margin:2px 4px 2px 0; }
+  textarea { width:100%; background:#0f1226; color:#eef0fb; border:1px solid #4b5080; border-radius:8px; padding:8px; font-size:13px; font-family:monospace; min-height:130px; } .badge { display:inline-block; font-weight:800; padding:4px 12px; border-radius:20px; background:#0f1226; } .bar { height:14px; background:#0f1226; border-radius:8px; position:relative; margin:12px 0 6px; overflow:hidden; } .bar i.f { position:absolute; left:0; top:0; bottom:0; background:#7c83f0; } .bar i.n { position:absolute; top:0; bottom:0; width:3px; background:#fff; }
+  .seg { display:inline-block; height:22px; background:#7c83f0; border-radius:4px; margin:2px 2px 2px 0; vertical-align:middle; } .seg.last { background:#4f46c8; } .chip { display:inline-block; font-family:monospace; background:#0f1226; border-radius:6px; padding:2px 8px; margin:2px 4px 2px 0; font-size:16px; }
+.big{font-family:monospace;font-size:26px;font-weight:800;color:#a5b4fc}.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:10px}.k div{background:#0f1226;border-radius:10px;padding:10px}.k b{display:block;font-size:19px;color:#a5b4fc}.k span{font-size:12px;color:#aeb4d6}.bar{height:12px;background:#0f1226;border-radius:8px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;background:#7c83f0}.bar i.hot{background:#ff7b72}</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bloom<span>Size</span></h1>
+  <div class="sub">How many bits and hash functions does your Bloom filter need? Get the numbers, then run a real one in your browser to check them.</div>
+  <div class="card">
+    <div class="grid"><div><label>Items to store (n)</label><input id="n" value="1000000"></div><div><label>Wrong "yes" rate you can live with</label><select id="p"><option value="0.1">10% (1 in 10)</option><option value="0.05">5%</option><option value="0.01" selected>1% (1 in 100)</option><option value="0.001">0.1% (1 in 1,000)</option><option value="0.0001">0.01%</option><option value="0.000001">1 in a million</option></select></div><div><label>Size of one item (bytes, for comparison)</label><input id="sz" value="20"></div></div>
+    <button id="q1">1 million, 1%</button><button id="q2">URL blocklist</button><button id="q3">Tiny filter</button>
+    <div id="plan" style="margin-top:12px"></div>
+  </div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Squeeze it into a budget</h2>
+    <div class="grid"><div><label>Memory you have (MB)</label><input id="mb" value="1"></div></div><div id="bud" style="margin-top:8px"></div></div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">If you put in more than planned</h2><div id="over"></div></div>
+  <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Run it for real</h2><div class="muted">Builds the planned filter with real hashing, inserts your items, then asks about 200,000 items that were never added.</div><button id="run">Run simulation</button><div id="sim" style="margin-top:10px"></div></div>
+  <div class="note">Formulas are the ones on the Wikipedia Bloom filter page: false positive rate (1 - e^(-kn/m))^k, best k = (m/n) ln 2, bits m = -n ln p / (ln 2)^2. That rate assumes the bits are set independently, which is not exactly true; for small filters the app also shows the exact value when it can compute it by counting every possible outcome, and the true rate is a little higher. The simulation uses double hashing (two mixed 32-bit hashes combined as h1 + i*h2) over numbered items; a real filter with your own hash function should land in the same range, not on the same digits. No false negatives are possible and the simulation confirms it on up to 2,000 inserted items. Item size is only for the comparison line: a filter cannot return items, and it cannot delete them. Runs in your browser, nothing stored.</div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var B = window.BloomSize, $ = function (i) { return document.getElementById(i); }, plan = null;
+  function fmtBytes(b) { return b >= 1048576 ? (b / 1048576).toFixed(2) + ' MiB' : b >= 1024 ? (b / 1024).toFixed(1) + ' KiB' : Math.round(b) + ' B'; }
+  function pct(p) { return p >= 0.01 ? (p * 100).toFixed(2) + '%' : p >= 1e-6 ? (p * 100).toFixed(4) + '%' : p.toExponential(2); }
+  function oneIn(p) { return p > 0 ? '1 in ' + Math.round(1 / p).toLocaleString() : '-'; }
+  function num(id) { return parseFloat($(id).value.replace(/,/g, '')); }
+  function bad(msg) { $('plan').innerHTML = '<span class="err">' + msg + '</span>'; $('bud').innerHTML = ''; $('over').innerHTML = ''; $('sim').innerHTML = ''; plan = null; }
+  function run() {
+    var n = num('n'), p = parseFloat($('p').value), sz = num('sz');
+    if (!(n >= 1) || n > 1e10 || Math.floor(n) !== n) return bad('Enter a whole number of items between 1 and 10,000,000,000.');
+    if (!(sz > 0)) return bad('Enter an item size above 0 bytes.');
+    var s = B.sizeFor(n, p), raw = B.versusRaw(n, sz, s.bytes); plan = s;
+    var ex = B.fpExact(s.m, n, s.k);
+    $('plan').innerHTML = '<div class="big">' + fmtBytes(s.bytes) + '</div><div class="muted">' + s.m.toLocaleString() + ' bits for ' + n.toLocaleString() + ' items</div>' +
+      '<div class="k"><div><b>' + s.bitsPerItem.toFixed(2) + '</b><span>bits per item</span></div><div><b>' + s.k + '</b><span>hash functions (ideal ' + s.kReal.toFixed(2) + ')</span></div><div><b>' + pct(s.pActual) + '</b><span>actual wrong "yes" rate with ' + s.k + ' hashes (' + oneIn(s.pActual) + ')</span></div><div><b>' + (raw.ratio >= 1 ? raw.ratio.toFixed(1) + 'x smaller' : (1 / raw.ratio).toFixed(1) + 'x bigger') + '</b><span>than storing ' + n.toLocaleString() + ' items of ' + sz + ' bytes (' + fmtBytes(raw.rawBytes) + ')</span></div></div>' +
+      (ex !== null ? '<div class="muted" style="margin-top:8px">Exact rate for this small filter, counting every outcome: <b>' + pct(ex) + '</b> (formula says ' + pct(s.pActual) + ').</div>' : '');
+    budget(); $('sim').innerHTML = '';
+    var o = B.overfill(s.m, s.k, n, [0.5, 1, 1.5, 2, 5, 10]);
+    $('over').innerHTML = '<table><tr><th>Items in the filter</th><th>Wrong "yes" rate</th><th></th></tr>' + o.map(function (r) { return '<tr' + (r.factor === 1 ? ' class="me"' : '') + '><td>' + r.n.toLocaleString() + ' (' + r.factor + 'x)</td><td class="v m">' + pct(r.p) + '</td><td style="width:35%"><div class="bar"><i class="' + (r.p > 0.5 ? 'hot' : '') + '" style="width:' + Math.max(1, Math.min(100, r.p * 100)) + '%"></i></div></td></tr>'; }).join('') + '</table>';
+  }
+  function budget() {
+    if (!plan) return; var mb = num('mb');
+    if (!(mb > 0)) { $('bud').innerHTML = '<span class="err">Enter a memory size above 0.</span>'; return; }
+    var m = Math.floor(mb * 1048576 * 8), f = B.fromBits(m, plan.n);
+    $('bud').innerHTML = 'With ' + mb + ' MB (' + m.toLocaleString() + ' bits) for ' + plan.n.toLocaleString() + ' items: <b>' + f.bitsPerItem.toFixed(2) + ' bits per item</b>, use <b>' + f.k + ' hashes</b>, wrong "yes" rate <b>' + pct(f.p) + '</b> (' + oneIn(f.p) + '). It would hold ' + B.capacity(m, f.k, plan.targetP).toLocaleString() + ' items at your target of ' + pct(plan.targetP) + '.';
+  }
+  $('q1').onclick = function () { $('n').value = '1000000'; $('p').value = '0.01'; $('sz').value = '20'; run(); };
+  $('q2').onclick = function () { $('n').value = '5000000'; $('p').value = '0.001'; $('sz').value = '60'; run(); };
+  $('q3').onclick = function () { $('n').value = '10'; $('p').value = '0.05'; $('sz').value = '8'; run(); };
+  ['n', 'p', 'sz'].forEach(function (i) { $(i).oninput = run; $(i).onchange = run; }); $('mb').oninput = budget;
+  $('run').onclick = function () {
+    if (!plan) return; if (plan.n > 5e6) { $('sim').innerHTML = '<span class="err">Simulation is capped at 5,000,000 items; lower n to try it.</span>'; return; }
+    $('sim').innerHTML = '<span class="muted">Running...</span>';
+    setTimeout(function () {
+      var r = B.simulate(plan.m, plan.k, plan.n, 200000, 1), p = B.fpApprox(plan.m, plan.n, plan.k);
+      $('sim').innerHTML = '<div class="k"><div><b>' + pct(r.empirical) + '</b><span>measured wrong "yes" (' + r.hits + ' of ' + r.probes.toLocaleString() + ' absent items)</span></div><div><b>' + pct(p) + '</b><span>formula</span></div><div><b>' + (r.fill * 100).toFixed(1) + '%</b><span>of bits set (half is the sweet spot)</span></div><div><b>' + r.membersFound + ' of ' + r.membersChecked + '</b><span>real members found (never fewer)</span></div></div>';
+    }, 30);
+  };
+  run();
+})();
+</script>
+</body>
+</html>
