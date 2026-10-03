@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloomSize - Bloom filter sizing, checked by running one</title>
+<meta name="description" content="Bloom filter calculator: bits, hash functions, false positive rate, memory budget, overfill, and a real simulation to check the numbers.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#0f1226; color:#eef0fb; line-height:1.6; }
+  .wrap { max-width:680px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#a5b4fc; }
+  .tag { font-size:19px; margin-top:10px; color:#d6daf0; }
+  .cta { display:inline-block; margin-top:26px; background:#a5b4fc; color:#0f1226; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; } li { color:#b6bcdc; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#1a1f3d; border-radius:14px; padding:18px; } .demo b { color:#a5b4fc; }
+  footer { margin-top:50px; font-size:13px; color:#868cb4; } a { color:#a5b4fc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Bloom<span>Size</span></div>
+  <div class="tag">Under 10 bits per item buys a 1% wrong-yes rate. Then it runs a real filter to prove it.</div>
+  <a class="cta" href="app.html">Open the app</a>
+  <div class="demo">1 million items at a 1% false positive rate need <b>9.59 bits per item</b>, 7 hash functions and about <b>1.14 MiB</b>. Put in twice as many items and the rate jumps past <b>10%</b>.</div>
+  <h2>What it does</h2>
+  <ul><li>Bits, bytes and hash count for your item count and target rate</li><li>What a fixed memory budget gets you, and how many items it holds</li><li>What happens when the filter is overfilled</li><li>A real bit-array simulation next to the formula</li></ul>
+  <footer>Formulas from the Wikipedia Bloom filter page; exact small-filter values are counted, not approximated. Static, client-side, nothing stored. <a href="https://github.com/iLanis-agent/bloomsize">Source</a></footer>
+</div>
+</body>
+</html>
