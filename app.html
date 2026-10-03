@@ -37,7 +37,7 @@
     <div id="plan" style="margin-top:12px"></div>
   </div>
   <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Squeeze it into a budget</h2>
-    <div class="grid"><div><label>Memory you have (MB)</label><input id="mb" value="1"></div></div><div id="bud" style="margin-top:8px"></div></div>
+    <div class="grid"><div><label>Memory you have (MiB, 1,048,576 bytes)</label><input id="mb" value="1"></div></div><div id="bud" style="margin-top:8px"></div></div>
   <div class="card"><h2 style="margin:0 0 8px;font-size:15px">If you put in more than planned</h2><div id="over"></div></div>
   <div class="card"><h2 style="margin:0 0 8px;font-size:15px">Run it for real</h2><div class="muted">Builds the planned filter with real hashing, inserts your items, then asks about 200,000 items that were never added.</div><button id="run">Run simulation</button><div id="sim" style="margin-top:10px"></div></div>
   <div class="note">Formulas are the ones on the Wikipedia Bloom filter page: false positive rate (1 - e^(-kn/m))^k, best k = (m/n) ln 2, bits m = -n ln p / (ln 2)^2. That rate assumes the bits are set independently, which is not exactly true; for small filters the app also shows the exact value when it can compute it by counting every possible outcome, and the true rate is a little higher. The simulation uses double hashing (two mixed 32-bit hashes combined as h1 + i*h2) over numbered items; a real filter with your own hash function should land in the same range, not on the same digits. No false negatives are possible and the simulation confirms it on up to 2,000 inserted items. Item size is only for the comparison line: a filter cannot return items, and it cannot delete them. Runs in your browser, nothing stored.</div>
@@ -68,7 +68,7 @@
     if (!plan) return; var mb = num('mb');
     if (!(mb > 0)) { $('bud').innerHTML = '<span class="err">Enter a memory size above 0.</span>'; return; }
     var m = Math.floor(mb * 1048576 * 8), f = B.fromBits(m, plan.n);
-    $('bud').innerHTML = 'With ' + mb + ' MB (' + m.toLocaleString() + ' bits) for ' + plan.n.toLocaleString() + ' items: <b>' + f.bitsPerItem.toFixed(2) + ' bits per item</b>, use <b>' + f.k + ' hashes</b>, wrong "yes" rate <b>' + pct(f.p) + '</b> (' + oneIn(f.p) + '). It would hold ' + B.capacity(m, f.k, plan.targetP).toLocaleString() + ' items at your target of ' + pct(plan.targetP) + '.';
+    $('bud').innerHTML = 'With ' + mb + ' MiB (' + m.toLocaleString() + ' bits) for ' + plan.n.toLocaleString() + ' items: <b>' + f.bitsPerItem.toFixed(2) + ' bits per item</b>, use <b>' + f.k + ' hashes</b>, wrong "yes" rate <b>' + pct(f.p) + '</b> (' + oneIn(f.p) + '). It would hold ' + B.capacity(m, f.k, plan.targetP).toLocaleString() + ' items at your target of ' + pct(plan.targetP) + '.';
   }
   $('q1').onclick = function () { $('n').value = '1000000'; $('p').value = '0.01'; $('sz').value = '20'; run(); };
   $('q2').onclick = function () { $('n').value = '5000000'; $('p').value = '0.001'; $('sz').value = '60'; run(); };
